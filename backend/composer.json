@@ -1,0 +1,19 @@
+{
+    "name": "shubham/chat_app",
+    "autoload": {
+        "psr-4": {
+            "Shubham\\ChatApp\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "palmate09",
+            "email": "palmateshubham9@gmail.com"
+        }
+    ],
+    "require": {
+        "firebase/php-jwt": "^6.11",
+        "cboden/ratchet": "^0.4.4",
+        "vlucas/phpdotenv": "^5.6"
+    }
+}
