@@ -52,14 +52,14 @@ create table chat_room_members (
 );
 
 
-create table messages (
-    id varchar(50) PRIMARY KEY,
+CREATE TABLE messages (
+    id VARCHAR(50) PRIMARY KEY,
     room_id varchar(50) NOT NULL,
     sender_id varchar(50) NOT NULL,
-    message_text TEXT,
-    message_type ENUM('text','image','file') DEFAULT 'text',
+    content TEXT,                 -- text message
+    media_url VARCHAR(255),       -- image/file path
+    media_type ENUM('image','video','file','none') DEFAULT 'none',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (room_id) REFERENCES chat_rooms(id) ON DELETE CASCADE,
     FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
 );
