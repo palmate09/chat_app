@@ -1,6 +1,8 @@
 <?php
 namespace Core; 
 
+use Core\Responose; 
+
 class Router{
     private $routes = [
         'GET' => [], 
@@ -10,22 +12,22 @@ class Router{
     ];
 
     //Register get route
-    private function get($path, $callback){
+    public function get($path, $callback){
         $this->routes['GET'][$path] = $callback; 
     }
     
     //Register post route
-    private function post($path, $callback){
+    public function post($path, $callback){
         $this->routes['POST'][$path] = $callback;
     }
 
     //Register put route
-    private function put($path, $callback){
+    public function put($path, $callback){
         $this->routes['PUT'][$path] = $callback;
     }
 
     //Register delete route
-    private function delete($path, $callback){
+    public function delete($path, $callback){
         $this->routes['DELETE'][$path] = $callback;
     }
 
