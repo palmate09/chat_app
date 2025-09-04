@@ -45,6 +45,7 @@ create table chat_room_members (
     id varchar(50) PRIMARY KEY,
     room_id varchar(50) NOT NULL,
     user_id varchar(50) NOT NULL,
+    role   ENUM('member', 'admin') DEFAULT 'member',
     joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (room_id) REFERENCES chat_rooms(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
