@@ -71,7 +71,7 @@ class User {
 
         try{
 
-            $stmt = $this->db->prepare('SELECT * FROM User WHERE id = ?');
+            $stmt = $this->db->prepare('SELECT * FROM users WHERE id = ?');
             $stmt->execute([$userId]);
             $user_data = $stmt->fetch(PDO::FETCH_ASSOC); 
 
@@ -87,20 +87,24 @@ class User {
         }
     }
 
-    public function updateProfile(string $userId, $input, $allowed): ?array{
+    public function updateProfile(string $userId, array $input, array $allowed): ?array{
 
         try{
             // update the profile
             $fields = array_intersect_key($input, array_flip($allowed));
-
             RequestValidator::validate($fields);
+
+            if(!empty($fields['password'])){
+                $fields['password'] = password_hash($fields['password'], PASSWORD_BCRYPT);  
+            }
             
             $set = []; 
             foreach($fields as $key => $value){
                 $set[] = "$key = :$key";
-            }
+            } 
 
-            $sql = "UPDATE users SET" . implode(", ", $set). " WHERE id = :id"; 
+
+            $sql = "UPDATE users SET " . implode(", ", $set). " WHERE id = :id"; 
             $stmt = $this->db->prepare($sql); 
 
             $fields["id"] = $userId; 
@@ -108,7 +112,7 @@ class User {
 
             // get the updated profile 
             $stmt = $this->db->prepare("SELECT * FROM users WHERE id = :id"); 
-            $stmt->execute([$userId]); 
+            $stmt->execute([":id" => $userId]); 
             $update_user = $stmt->fetch(PDO::FETCH_ASSOC); 
 
             return $update_user; 
@@ -120,19 +124,13 @@ class User {
     }
 
 
-    public function deleteUser(string $userId, $input): ?array{
+    public function deleteUser(string $userId): null{
         try{
-
             //delete the user
             $stmt = $this->db->prepare("DELETE FROM users WHERE id = :id"); 
-            $stmt->execute([$userId]); 
-            
-            // check wether it is present or not 
-            $stmt = $this->db->prepare("SELECT * FROM users WHERE id = :id"); 
-            $stmt->execute([$userId]);
-            $user = $stmt->fetch(PDO::FETCH_ASSOC); 
+            $stmt->execute([":id" => $userId]);  
 
-            return $user; 
+            return null; 
         }
         catch(Exception $e){
             Response::json(["status" => "error", "message" => $e->getMessage()], 500); 

@@ -11,6 +11,20 @@ use Models\User;
 // load config 
 require __DIR__ . '/../config/config.php';
 
+function auth(){
+    $headers = getallheaders(); 
+
+    if(!isset($headers['Authorization'])){
+        Response::json(["status" => "error", "message" => "Unauthorized"]); 
+    }
+
+    $authHeader = $headers['Authorization'] ?? ""; 
+    $token = trim(str_replace("Bearer", "", $authHeader)); 
+    $id = Auth::verifyToken($token);
+
+    return $id; 
+}
+
 //simple router example
 $router = new Router(); 
 
@@ -55,10 +69,33 @@ $router->post('/login', function($request){
 });
 
 $router->get('/profile', function($request){
-
+    $user_id = auth()['id']; 
     
-
+    $user = new User(); 
+    $user_data = $user->showProfile($user_id); 
+    
+    Response::json(["status" => "success", "message" => "user received successfully!", "data" => $user_data]); 
 }); 
+
+$router->put('/profile', function($request){
+    $input = json_decode(file_get_contents('php://input'), true);
+    $user_id = auth()['id']; 
+    $allowed = ["username", "email", "password", "name"]; 
+    
+    $user = new User(); 
+    $updated_user = $user->updateProfile($user_id, $input, $allowed); 
+
+    Response::json(["status" => "success", "message" => "profile updated successfully!", "updated_data" => $updated_user]); 
+});
+
+$router->delete('/profile', function($request){
+    $user_id = auth()['id'];
+
+    $user = new User(); 
+    $user->deleteUser($user_id);
+
+    Response::json(["status" => "success", "message" => "profile deleted successfully!"]); 
+});
 
 
 $router->run(); 
