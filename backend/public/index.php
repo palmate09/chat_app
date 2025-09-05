@@ -28,6 +28,8 @@ function auth(){
 //simple router example
 $router = new Router(); 
 
+// user login and profile endpoints; 
+
 $router->post('/register', function($request){
     $input = json_decode(file_get_contents('php://input'), true);
 
@@ -96,6 +98,9 @@ $router->delete('/profile', function($request){
 
     Response::json(["status" => "success", "message" => "profile deleted successfully!"]); 
 });
+
+
+// contact endpoints;
 
 
 $router->run(); 

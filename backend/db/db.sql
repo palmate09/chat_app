@@ -11,13 +11,6 @@ create table users(
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ); 
 
-create table password_resets(
-    id     INT     AUTO_INCREMENT PRIMARY KEY,
-    email  varchar(255) NOT NULL,
-    token  varchar(64) NOT NULL, 
-    expire_at   DATETIME NOT NULL, 
-    created_at  TIMESTAMP DEFAULT   CURRENT_TIMESTAMP,  
-);
 
 create table contacts (
     id varchar(50) PRIMARY KEY,
