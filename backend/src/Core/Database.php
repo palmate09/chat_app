@@ -10,7 +10,7 @@ class Database{
     private function __construct(){
         $config = require __DIR__ . '/../../config/config.php'; 
         $this->conn = new PDO(
-            "mysql:host={$config['db_host']}; db_name={config['db_name']};charset=utf8mb4", 
+            "mysql:host={$config['db_host']}; dbname={$config['db_name']};charset=utf8mb4", 
             $config['db_user'],
             $config['db_pass']
         );

@@ -2,7 +2,10 @@
     "name": "shubham/chat_app",
     "autoload": {
         "psr-4": {
-            "Shubham\\ChatApp\\": "src/"
+            "Shubham\\ChatApp\\": "src/",
+            "Core\\": "src/Core/",
+            "Models\\": "src/Models/",
+            "WebSocket\\": "src/WebSocket/"
         }
     },
     "authors": [

@@ -11,7 +11,7 @@ use PDO;
 
 class User {
     private $db; 
-    private function __construct(){
+    public function __construct(){
         $this->db = Database::getInstance();
     }
 
@@ -22,7 +22,9 @@ class User {
             $password_hash = password_hash($password, PASSWORD_BCRYPT); 
 
             $stmt = $this->db->prepare('INSERT INTO users(id, username, email, password, name) VALUES(?,?,?,?,?)');
-            $stmt->execute([$id, $username, $email, $password, $name]); 
+            $stmt->execute([$id, $username, $email, $password_hash, $name]);
+
+            return $id; 
         }
         catch(Exception $e){
             Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
