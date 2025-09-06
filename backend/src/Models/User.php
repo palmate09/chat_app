@@ -136,5 +136,22 @@ class User {
             Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
+
+    public function updateStatus(string $user_id, string $status): null{
+
+        RequestValidator::validate([
+            "status" => $status
+        ]); 
+
+        try{
+            // update the status of the user online: offline
+            $stmt = $this->db->prepare("UPDATE users SET status = ? WHERE id = ?");
+            $stmt->execute([$status, $user_id]);
+            return null; 
+        }
+        catch(Exception $e){
+            return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
+        }
+    }
 }
  

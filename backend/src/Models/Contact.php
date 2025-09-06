@@ -56,7 +56,7 @@ class Contact{
 
         }
         catch(Exception $e){
-            Response::json(["status"=>"error","message"=>$e->getMessage()]);
+            Response::json(["status"=>"error","message"=>$e->getMessage()], 500);
         }
     }
 
@@ -88,7 +88,7 @@ class Contact{
             return $data; 
         }
         catch(Exception $e){
-            Response::json(["status" => "error", "message" => $e->getMessage()]); 
+            Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
 
@@ -120,7 +120,7 @@ class Contact{
             return $data; 
         }
         catch(Exception $e){
-            Response::json(["status" => "error", "message" => $e->getMessage()]); 
+            Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
 
@@ -149,7 +149,7 @@ class Contact{
         }
     }
 
-    // show particular conatct detail of the user_id and contact_id
+    // show particular contact detail of the user_id and contact_id
     public function show_particular_contact(string $user_id , string $contact_id): ?array{
         RequestValidator::validate([
             "user id" => $user_id, 
@@ -166,7 +166,7 @@ class Contact{
             return $user; 
         }
         catch(Exception $e){
-            Response::json(["status" => "error", "message" => $e->getMessage()]); 
+            Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     } 
 
@@ -194,7 +194,7 @@ class Contact{
         }
 
         catch(Exception $e){
-            Response::json(["status" => "error", "message" => $e->getMessage()]); 
+            Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
 
     }
