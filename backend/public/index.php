@@ -102,17 +102,6 @@ $router->delete('/profile', function($request){
     Response::json(["status" => "success", "message" => "profile deleted successfully!"], 200); 
 });
 
-$router->put('/profile/status', function($request){
-    $input = json_decode(file_get_contents('php://input'), true); 
-    $user_id = auth()['id']; 
-    $status = $input['status']; 
-
-    $user = new User(); 
-    $user->updateStatus($user_id, $status); 
-
-    Response::json(["status" => "success", "message" => "profile status updated successfully" ], 200); 
-});
-
 
 // contact endpoints;
 
@@ -259,10 +248,10 @@ $router->post('/room/set_role', function($request){
     $room_id = $_GET['room_id'];
     $user_id = auth()['id'];
     
-    $room = new ChatMember(); 
-    $room->setRole($room_id, $user_id, $status); 
+    $member = new ChatMember(); 
+    $member->setRole($room_id, $user_id, $status); 
 
-    Response::json(["status" => "success" , "message" => "Received Particular Room data"], 201); 
+    Response::json(["status" => "success" , "message" => "admin role set successfully"], 201); 
 });
 
 // add the new member by the admin in the group
@@ -273,12 +262,84 @@ $router->post('/room/add_new_member', function($request){
     $user_id = $_GET['user_id']; 
     $admin_id = auth()['id']; 
 
-    $room = new ChatRoom(); 
+    $member = new ChatMember(); 
+    $member->addMember($room_id, $admin_id, $user_id, $role); 
 
-
+    Response::json(["status" => "success", "message" => "New member added successfully"], 201);
 
 }); 
 
-// 
+// remove the member by the admin in the group
+$router->delete('/room/remove_member', function($request){
+    $member_id = $_GET['memebr_id']; 
+    $room_id = $_GET['room_id']; 
+    $user_id = auth()['id']; 
+
+    $member = new ChatMember(); 
+    $member->removeMember($member_id, $room_id, $user_id); 
+
+    Response::json(["status" => "success", "message" => "member has been deleted successfully"], 200);
+}); 
+
+// show all the member for the particular group
+$router->get('/room/get_all_member', function($request){
+    $member_id = $_GET['member_id']; 
+    $room_id = $_GET['room_id'];
+
+    $member = new ChatMember(); 
+    $member->showAllMemeber($member_id, $room_id);
+
+    Response::json(["status" => "success", "message" => "All members received successfully"], 200); 
+}); 
+
+// Message  endpoints 
+
+// send new message to the room with multiple or single member
+$router->post('/message/sendMessage', function($request){
+    $input = json_decode(file_get_contents('php://input'), true); 
+    $room_id = $_GET['room_id']; 
+    $user_id = auth()['id']; 
+    $content = $input['content']; 
+
+    $message = new Message(); 
+    $data = $message->sendMessage($room_id, $user_id, $content);
+
+    Response::json(["status" => "success", "message" => "message has been sent successfully", "data" => $data], 201);
+});
+
+// show the message
+$router->get('/message/showMessage', function($request){
+
+    $room_id = $_GET['room_id']; 
+
+    $message = new Message(); 
+    $data = $message->showMessage($room_id); 
+
+    Response::json(["status" => "success", "message" => "message received", "data" => $data], 200); 
+}); 
+
+// update the particular message by the user
+$router->put('/message/update_message', function($request){
+    $input = json_decode(file_get_contents('php://input'), true); 
+    $message_id = $_GET['message_id']; 
+    $content = $input['content'];
+    $user_id = auth()['id']; 
+
+    $message = new Message(); 
+    $data = $message->updateMessage($message_id, $user_id, $content); 
+
+    Response::json(["status" => "success", "message" => "message received", "data" => $data], 200); 
+});
+
+// remove the message 
+$router->delete('/message/delete_message', function($request){
+    $message_id = $_GET['message_id'];
+    
+    $message = new Message(); 
+    $data = $message->removeMessage($message_id);
+
+    Response::json(["status" => "success", "message" => "message deleted successfully"], 200); 
+}); 
+
 
 $router->run(); 

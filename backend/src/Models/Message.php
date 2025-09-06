@@ -76,17 +76,18 @@ class Message{
         }
     }
 
-    public function updateMessage(string $id, string $content): ?array{
+    public function updateMessage(string $id, string $user_id, string $content): ?array{
         RequestValidator::validate([
             "message id" => $id,
-            "content" => $content 
+            "content" => $content, 
+            "user id" => $user_id
         ]); 
 
         try{
             // update the messages content
-            $sql = "UPDATE messages SET content = ? WHERE id = ?";
+            $sql = "UPDATE messages SET content = ? WHERE id = ? AND user_id = ?";
             $stmt = $this->db->prepare($sql); 
-            $stmt->execute([$content, $id]);
+            $stmt->execute([$content, $id, $user_id]);
             
             // show the updated message
             $sql1 = "SELECT content, sender_id FROM messages WHERE id = ?";
@@ -101,7 +102,7 @@ class Message{
         }
     }
 
-    public function remove(string $id): null{
+    public function removeMessage(string $id): null{
         RequestValidator::validate([
             "message id" => $id
         ]); 
