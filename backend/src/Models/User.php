@@ -26,7 +26,7 @@ class User {
 
             return $id; 
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
 
@@ -60,7 +60,7 @@ class User {
                 ]; 
             }
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             Response::json(["status"=>"error", "message" => $e->getMessage()], 500); 
         }
         
@@ -69,11 +69,10 @@ class User {
 
     public function showProfile(string $userId): ?array{
 
-        try{
-
+        try{ 
             $stmt = $this->db->prepare('SELECT * FROM users WHERE id = ?');
             $stmt->execute([$userId]);
-            $user_data = $stmt->fetch(PDO::FETCH_ASSOC); 
+            $user_data = $stmt->fetch(PDO::FETCH_ASSOC);  
 
             if(empty($user_data)){
                 Response::json(["status" => "error", "message" => "profile not found"], 400);
@@ -82,7 +81,7 @@ class User {
             return $user_data; 
 
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
@@ -118,7 +117,7 @@ class User {
             return $update_user; 
             
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
@@ -132,7 +131,7 @@ class User {
 
             return null; 
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
@@ -149,7 +148,7 @@ class User {
             $stmt->execute([$status, $user_id]);
             return null; 
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }

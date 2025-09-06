@@ -47,7 +47,7 @@ class Message{
                 "message_status_id" => $new_id 
             ]; 
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
@@ -71,7 +71,7 @@ class Message{
 
             return $message; 
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
@@ -97,7 +97,7 @@ class Message{
 
             return $updated_message; 
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
@@ -114,7 +114,7 @@ class Message{
             
             return null; 
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             return Response::json(["status" => "error", "message" => $e->getMessage()]); 
         }
     }

@@ -58,7 +58,7 @@ class ChatServer implements MessageComponentInterface {
         $data = json_decode($msg, true); 
         if(!$data) return; 
 
-        $msg_data = $this->messageModel($data['room_id'], $data['sender_id'], $data['message_text']); 
+        $msg_data = $this->messageModel->sendMessage($data['room_id'], $data['sender_id'], $data['message_text']); 
         $msg_id = $msg_data['message_id']; 
         //Broadcast to all online members
         foreach($this->userConnections as $uid => $connections){

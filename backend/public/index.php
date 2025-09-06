@@ -104,9 +104,8 @@ $router->delete('/profile', function($request){
 
 
 // contact endpoints;
-
 // sends the follow request
-router->post('/contacts/request', function($request){
+$router->post('/contacts/request', function($request){
     $contact_id = $_GET['contact_id'];
     $user_id = auth()['id']; 
 
@@ -117,7 +116,7 @@ router->post('/contacts/request', function($request){
 });
 
 // update the status 
-router->put('/contacts/add',function($request){
+$router->put('/contacts/add',function($request){
     $contact_id = $_GET['contact_id'];
     $user_id = auth()['id'];
 
@@ -128,7 +127,7 @@ router->put('/contacts/add',function($request){
 });
 
 // update the status as accepted from blocked
-router->put('/contacts/update', function($request){
+$router->put('/contacts/update', function($request){
     $contact_id = $_GET['contact_id']; 
     $user_id = auth()['id']; 
 
@@ -139,7 +138,7 @@ router->put('/contacts/update', function($request){
 }); 
 
 // show all the contacts of the user_id
-router->get('/contacts/get', function($request){
+$router->get('/contacts/get', function($request){
     $user_id = auth()['id']; 
 
     $contact = new Contact();
@@ -149,12 +148,12 @@ router->get('/contacts/get', function($request){
 });
 
 // show particular contact detail of user_id and contact_id
-router->get('/contact/get_particular_contact', function($request){
+$router->get('/contacts/get_particular_contact', function($request){
     $user_id= auth()['id']; 
     $contact_id = $_GET['contact_id'];
 
     $contact = new Contact(); 
-    $data = $contact->show_particular_contact($contact_id, $user_id); 
+    $data = $contact->show_particular_contact($user_id, $contact_id); 
 
     Response::json(["status" => "success", "message" => "the particular contact recieved", "data" => $data], 200);
 });
@@ -188,25 +187,36 @@ $router->delete('/contact/remove_contact', function($request){
 $router->post('/room/new_room', function($request){
     $input = json_decode(file_get_contents('php://input'), true); 
     $user_id = auth()['id'];
+    $contact_id = $_GET['contact_id']; 
     $name = $input['name']; 
     $is_group = $input['is_group'];  
     
     $room = new ChatRoom();
-    $room->create($user_id, $name, $is_group); 
+    $room->create($user_id, $is_group, $name, $contact_id); 
     
     Response::json(["status" => "success", "message" => "chat room created successfully"], 201); 
 
 });
 
-// show all the chat rooms for the particular user
-$router->get('/room/show_rooms_of_users', function($request){
-    $id = $_GET['room_id'];
+// show all the rooms of particular user
+$router->get('/room/show_user_rooms', function($request){
+    $user_id = auth()['id']; 
 
     $room = new ChatRoom(); 
-    $data = $room->show($id);
-    
-    Response::json(["status" => "success", "message" => "All the room data received", "data" => $data], 200);
-}); 
+    $data = $room->show_user_rooms($user_id);
+
+    Response::json(["status" => "success", "message" => "All chats received successfully", "data" => $data], 200); 
+});
+
+// show all the groups of the particular user; 
+$router->get('/room/show_group_rooms', function($request){
+    $user_id = auth()['id']; 
+
+    $room = new ChatRoom(); 
+    $data = $room->show_group_rooms($user_id);
+
+    Response::json(["status" => "success", "message" => "All groups received successfully", "data" => $data], 200); 
+});
 
 // show the particular room data for particular user; 
 $router->get('/room/show_room', function($request){
@@ -228,7 +238,7 @@ $router->put('/room/update_room', function($request){
     $room = new ChatRoom(); 
     $data = $room->update($room_id, $name);
 
-    Response::json(["status" => "success", "message" => "Received Particular Room data of the user"], 200);
+    Response::json(["status" => "success", "message" => "Room Data updated successfully", "data" => $data], 200);
 });
 
 // delete the room data 

@@ -55,7 +55,7 @@ class Contact{
             return null; 
 
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             Response::json(["status"=>"error","message"=>$e->getMessage()], 500);
         }
     }
@@ -80,14 +80,15 @@ class Contact{
                 $stmt->execute([$status, $contact_id, $user_id]); 
             }
 
+
             $sql = 'SELECT status FROM contacts WHERE contact_id = ? AND user_id = ?'; 
             $stmt = $this->db->prepare($sql); 
-            $stmt->exectue([$contact_id, $user_id]); 
+            $stmt->execute([$contact_id, $user_id]); 
             $data = $stmt->fetch(PDO::FETCH_ASSOC); 
             
             return $data; 
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
@@ -119,7 +120,7 @@ class Contact{
 
             return $data; 
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
@@ -133,10 +134,11 @@ class Contact{
         
         try{
             $sql = "SELECT
-                        c.id AS  contact_id, c.username
+                        c.id AS  contact_relation_id,
+                        u.id AS contact_id, u.username
                         FROM contacts c 
-                        LEFT JOIN users u ON u.id = c.id
-                        WHERE user_id = ? ";
+                        LEFT JOIN users u ON u.id = c.contact_id
+                        WHERE user_id = ? AND c.status = 'accepted'" ;
 
             $stmt = $this->db->prepare($sql); 
             $stmt->execute([$user_id]); 
@@ -144,7 +146,7 @@ class Contact{
 
             return $user;
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
@@ -165,11 +167,12 @@ class Contact{
 
             return $user; 
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     } 
 
+    // unfollow someone
     public function removeStatus(string $user_id, string $contact_id): null{
 
         RequestValidator::validate([
@@ -193,12 +196,13 @@ class Contact{
             return null; 
         }
 
-        catch(Exception $e){
+        catch(\Exception $e){
             Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
 
     }
 
+    // remove someone
     public function removeContact(string $user_id, string $contact_id):null{
         
         RequestValidator::validate([
@@ -214,7 +218,7 @@ class Contact{
 
             return null; 
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }

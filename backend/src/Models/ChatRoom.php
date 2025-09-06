@@ -11,53 +11,116 @@ use PDO;
 
 class ChatRoom {
     private $db; 
-    private $id; 
     
     public function __construct(){
         $this->db = Database::getInstance(); 
-        $this->id = Uuid::uuid4()->toString(); 
     }
 
-    public function create(string $user_id, $name, $is_group): null{
-        $id = $this->id; 
+    public function create(string $user_id, bool $is_group, ?string $name=null, ?string $contact_id=null): void{
+        $id = Uuid::uuid4()->toString(); 
 
         RequestValidator::validate([
-            "user id" => $user_id,
-            "name" => $name, 
-            "is group" => $is_group 
+            "user id" => $user_id
         ]);
 
         try{
-            $sql = 'INSERT INTO chat_rooms(id, name, is_group, created_by) VALUES(?,?,?,?)';
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([$id, $name, $is_group, $user_id]); 
+            $isGroup = $is_group ? 1:0; 
+            
+            if($is_group === false){
+                RequestValidator::validate([
+                    "contact id" => $contact_id
+                ]); 
 
-            return null; 
+                // first get the information of the member;
+                $sql2 = 'SELECT 
+                            u.id AS contact_id, 
+                            u.name,
+                            c.status
+                            FROM contacts c
+                            LEFT JOIN users u ON u.id = c.contact_id 
+                            WHERE c.user_id = ? 
+                            AND c.contact_id = ?'; 
+
+                $stmt2 = $this->db->prepare($sql2);
+                $stmt2->execute([$user_id, $contact_id]); 
+                $user_name = $stmt2->fetch(PDO::FETCH_ASSOC);                
+
+                if($user_name && $user_name['status'] === 'accepted'){
+                    // create the new room
+                    $id2 = Uuid::uuid4()->toString(); 
+                    $sql3 = "INSERT INTO chat_rooms(id, name, is_group, created_by) VALUES(?,?,?,?)";
+                    $stmt3 = $this->db->prepare($sql3); 
+                    $stmt3->execute([$id2, $user_name['name'], $isGroup, $user_id]);
+                }                
+            }
+            else{
+                // create chat room
+                $sql = 'INSERT INTO chat_rooms(id, name, is_group, created_by) VALUES(?,?,?,?)';
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([$id, $name, $isGroup, $user_id]);
+            }   
         }
-        catch(Exception $e){
-            return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
+        catch(\Exception $e){
+            Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
 
     }
 
-    // show all the chat room data of all the users
-    public function show(string $id): ?array{
+    // show all the rooms of particular user
+    public function show_user_rooms(string $user_id): ?array{
+
         RequestValidator::validate([
-            "room id" => $id
+            "user id" => $user_id
         ]); 
 
         try{
-            $sql = "SELECT * FROM chat_rooms WHERE id = ?"; 
+            $sql = 'SELECT id, name FROM chat_rooms WHERE created_by = ?';
             $stmt = $this->db->prepare($sql); 
-            $stmt->execute([$id]); 
-            $room_data = $stmt->fetch(PDO::FETCH_ASSOC); 
-
-            return $room_data; 
+            $stmt->execute([$user_id]); 
+            $roomsData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            return $roomsData; 
         }
-        catch(Exception $e){
-            return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
+        catch(\Exception $e){
+            return Response::json(["status"=>"error", "message" => $e->getMessage()], 500);
         }
     }
+
+    // show all the group chats of particular user
+    public function show_group_rooms(string $user_id): ?array{
+
+        RequestValidator::validate([
+            "user id" => $user_id
+        ]); 
+
+        try{
+
+            $sql = "SELECT is_group FROM chat_rooms WHERE created_by = ?"; 
+            $stmt = $this->db->prepare($sql); 
+            $stmt->execute([$user_id]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);  
+
+            if($user['is_group'] === 1){
+                $sql2 = "SELECT 
+                            c.id AS group_id, 
+                            c.name
+                            FROM chat_rooms c
+                            WHERE c.created_by = ?
+                            AND c.is_group = 1
+                            ";
+                $stmt2 = $this->db->prepare($sql2); 
+                $stmt2->execute([$user_id]); 
+                $user2 = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+
+                return $user2; 
+            }
+            return null; 
+        }
+        catch(\Exception $e){
+            return Response::json(["status" => "error", "message" => $e->getMessage()], 500);
+        }
+    }
+
 
     // show the room data of particular user
     public function show_room(string $id, string $user_id): ?array{
@@ -67,14 +130,14 @@ class ChatRoom {
         ]); 
 
         try{
-            $sql = "SELECT * FROM chat_rooms WHERE id = ? AND user_id = ?"; 
+            $sql = "SELECT * FROM chat_rooms WHERE id = ? AND created_by = ?"; 
             $stmt = $this->db->prepare($sql); 
             $stmt->execute([$id, $user_id]);
             $room_data = $stmt->fetch(PDO::FETCH_ASSOC); 
 
             return $room_data; 
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
@@ -99,7 +162,7 @@ class ChatRoom {
 
             return $room_data; 
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
@@ -116,7 +179,7 @@ class ChatRoom {
             $stmt->execute([$id]);
             return null;  
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
