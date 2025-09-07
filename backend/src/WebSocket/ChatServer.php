@@ -44,6 +44,8 @@ class ChatServer implements MessageComponentInterface {
         $user_id = $payload['id']; 
         $conn->user = $payload; 
 
+        $conn->userId = $user_id;
+
         if(!isset($this->userConnections[$user_id])){
             $this->userConnections[$user_id] = [];  
         }
@@ -57,27 +59,82 @@ class ChatServer implements MessageComponentInterface {
     public function onMessage(ConnectionInterface $from, $msg) {
         $data = json_decode($msg, true); 
         if(!$data) return; 
+        
+        $sender_id = $from->userId;
+        
+        switch($data['action']){
 
-        $msg_data = $this->messageModel->sendMessage($data['room_id'], $data['sender_id'], $data['message_text']); 
-        $msg_id = $msg_data['message_id']; 
-        //Broadcast to all online members
-        foreach($this->userConnections as $uid => $connections){
-            foreach($connections as $conn){
-                $conn->send(json_encode([
+            case "send": 
+                $receiver_id = $data['receiver_id'] ?? null;
+
+                var_dump($receiver_id); 
+
+                $msg_data = $this->messageModel->sendMessage(
+                    $data['room_id'],
+                    $sender_id,
+                    $data['text'],
+                    $receiver_id
+                ); 
+
+                $msg_id = $msg_data['message_id'];
+                $payload = json_encode([
+                    'action' => 'send',
                     'room_id' => $data['room_id'], 
-                    'sender_id' => $data['sender_id'],
-                    'message_text'=> $data['message_text'], 
-                    'message_id'=> $msg_id,
-                    'created_at' => date("Y-m-d H:i:s")
-                ])); 
-            }
+                    'sender_id' => $sender_id,
+                    'receiver_id' => $receiver_id ?? null,
+                    'message_text' => $data['text'], 
+                    'message_id' => $msg_id,
+                    "created_at" => date("Y-m-d H:i:s") 
+                ]);
+
+                // Broadcast message for all the connected members;
+                $this->broadcast($payload, $sender_id, $data); 
+                break; 
+            
+            // update message
+            case "update": 
+                $updated = $this->messageModel->updateMessage(
+                    $data['message_id'],
+                    $sender_id, 
+                    $data['new_text']
+                ); 
+
+                if($updated){
+                    $payload = json_encode([
+                        "action" => "update", 
+                        "message_id" => $data['message_id'],
+                        "new_text" => $data["new_text"],
+                        "updated_at" => date("Y-m-d H:i:s")
+                    ]); 
+
+                    $this->broadcast($payload, $sender_id, $data); 
+                }
+                break; 
+
+            // remove message
+            case "remove": 
+                $remove = $this->messageModel->removeMessage(
+                    $data['message_id']
+                ); 
+
+                if($remove){
+                    $payload = json_encode([
+                        "action" => "delete", 
+                        "message_id" => $data["message_id"]
+                    ]); 
+
+                    $this->broadcast($payload, $sender_id, $data);
+                }
+                break; 
         }
     }
 
     public function onClose(ConnectionInterface $conn) {
         $this->clients->detach($conn); 
+
         foreach($this->userConnections as $user_id => $connections){
             $index = array_search($conn, $connections, true); 
+
             if($index !== false){
                 unset($this->userConnections[$user_id][$index]); 
                 if(empty($this->userConnections[$user_id])){
@@ -93,5 +150,27 @@ class ChatServer implements MessageComponentInterface {
     public function onError(ConnectionInterface $conn, \Exception $e) {
         echo "Error: ".$e->getMessage()."\n"; 
         $conn->close(); 
+    }
+
+    private function broadcast(string $payload, string $senderId, array $data) {
+        if (!empty($data['receiver_id'])) {
+            // private chat
+            $receiverId = $data['receiver_id'];
+            if (isset($this->userConnections[$receiverId])) {
+                foreach ($this->userConnections[$receiverId] as $conn) {
+                    $conn->send($payload);
+                }
+            }
+            foreach ($this->userConnections[$senderId] as $conn) {
+                $conn->send($payload);
+            }
+        } elseif (!empty($data['room_id'])) {
+            // room chat
+            foreach ($this->userConnections as $uid => $connections) {
+                foreach ($connections as $conn) {
+                    $conn->send($payload);
+                }
+            }
+        }
     }
 }

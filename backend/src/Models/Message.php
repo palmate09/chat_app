@@ -15,19 +15,19 @@ class Message{
         $this->db = Database::getInstance(); 
     }
 
-    public function sendMessage(string $room_id, string $user_id, string $content): ?array{
+    public function sendMessage(string $room_id, string $user_id, string $content, ?string $receiver_id=null): ?array{
         
         RequestValidator::validate([
-            "room id" => $room_id, 
+            "room id" => $room_id,
             "user id" => $user_id, 
             "content" => $content
         ]); 
 
         try{
             $id = Uuid::uuid4()->toString(); 
-            $sql = "INSERT INTO messages(id,room_id, sender_id, content) VALUES (?,?,?,?)"; 
-            $stmt = $this->db->prepare($sql); 
-            $stmt->execute([$id, $room_id, $user_id, $content]);
+            $sql1 = "INSERT INTO messages(id,room_id, sender_id, content, receiver_id) VALUES (?,?,?,?,?)"; 
+            $stmt = $this->db->prepare($sql1); 
+            $stmt->execute([$id, $room_id, $user_id, $content, $receiver_id]);
             $msg_id = $id;
             
             // create message_status for all members
@@ -52,6 +52,10 @@ class Message{
         }
     }
 
+    // issue :- we should see the receiver name relatively like
+    //  if on shubham side the chat_room name should be gautami 
+    // but on the gautami side chat_room name should be shubham 
+    // as it is private chat 
     public function showMessage(string $room_id): ?array{
 
         RequestValidator::validate([
@@ -59,17 +63,44 @@ class Message{
         ]); 
 
         try{
-            $sql = "SELECT m.*, u.username
+            $sql1 = 'SELECT is_group FROM chat_rooms WHERE id = ?'; 
+            $stmt1= $this->db->prepare($sql1);
+            $stmt1->execute([$room_id]);
+            $roomData = $stmt1->fetch(PDO::FETCH_ASSOC); 
+
+            if($roomData['is_group'] === 1){
+                $sql = "SELECT 
+                        m.id AS message_id, m.content, 
+                        c.name AS receiver,
+                        u.name AS sender
                     FROM messages m
-                    JOIN users u ON u.id = m.sender_id
+                    LEFT JOIN users u ON u.id = m.sender_id
+                    LEFT JOIN chat_rooms c ON c.id = m.room_id
                     WHERE room_id = ?
-                    ORDER_BY m.created_at ASC";
+                    ORDER BY m.created_at ASC";
 
-            $stmt = $this->db->prepare($sql); 
-            $stmt->execute([$room_id]);
-            $message = $stmt->fetchAll(PDO::FETCH_ASSOC); 
+                $stmt = $this->db->prepare($sql); 
+                $stmt->execute([$room_id]);
+                $message = $stmt->fetchAll(PDO::FETCH_ASSOC); 
 
-            return $message; 
+                return $message;
+            }
+            else{
+                $sql2 = "SELECT 
+                            m.id AS message_id, m.content,
+                            U.name AS receiver,
+                            u.name AS sender
+                        FROM messages m
+                        LEFT JOIN users u ON u.id = m.sender_id
+                        LEFT JOIN users U ON U.id = m.receiver_id
+                        WHERE m.room_id = ?
+                        ORDER BY m.created_at ASC";
+                $stmt2 = $this->db->prepare($sql2);
+                $stmt2->execute([$room_id]); 
+                $message2 = $stmt2->fetchAll(PDO::FETCH_ASSOC); 
+                
+                return $message2; 
+            }
         }
         catch(\Exception $e){
             return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 

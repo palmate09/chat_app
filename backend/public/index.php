@@ -293,19 +293,6 @@ $router->get('/room/get_all_member', function($request){
 
 // Message  endpoints 
 
-// // send new message to the room with multiple or single member
-// $router->post('/message/sendMessage', function($request){
-//     $input = json_decode(file_get_contents('php://input'), true); 
-//     $room_id = $_GET['room_id']; 
-//     $user_id = auth()['id']; 
-//     $content = $input['content']; 
-
-//     $message = new Message(); 
-//     $data = $message->sendMessage($room_id, $user_id, $content);
-
-//     Response::json(["status" => "success", "message" => "message has been sent successfully", "data" => $data], 201);
-// });
-
 // show the message
 $router->get('/message/showMessage', function($request){
 
