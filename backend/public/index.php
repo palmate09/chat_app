@@ -249,20 +249,9 @@ $router->delete('/room/delete_room', function($request){
     $room->update($room_id);
 
     Response::json(["status" => "success", "message" => "Received Particular Room data of the user"], 200); 
-}); 
-
-// Chat Room member endpoint to set the role admin
-$router->post('/room/set_role', function($request){
-    $input = json_decode(file_get_contents('php://input'), true);  
-    $status = $input['status']; 
-    $room_id = $_GET['room_id'];
-    $user_id = auth()['id'];
-    
-    $member = new ChatMember(); 
-    $member->setRole($room_id, $user_id, $status); 
-
-    Response::json(["status" => "success" , "message" => "admin role set successfully"], 201); 
 });
+
+// ChatMember endpoints
 
 // add the new member by the admin in the group
 $router->post('/room/add_new_member', function($request){
@@ -297,25 +286,25 @@ $router->get('/room/get_all_member', function($request){
     $room_id = $_GET['room_id'];
 
     $member = new ChatMember(); 
-    $member->showAllMemeber($member_id, $room_id);
+    $data = $member->showAllMemeber($member_id, $room_id);
 
-    Response::json(["status" => "success", "message" => "All members received successfully"], 200); 
+    Response::json(["status" => "success", "message" => "All members received successfully", "data" => $data], 200); 
 }); 
 
 // Message  endpoints 
 
-// send new message to the room with multiple or single member
-$router->post('/message/sendMessage', function($request){
-    $input = json_decode(file_get_contents('php://input'), true); 
-    $room_id = $_GET['room_id']; 
-    $user_id = auth()['id']; 
-    $content = $input['content']; 
+// // send new message to the room with multiple or single member
+// $router->post('/message/sendMessage', function($request){
+//     $input = json_decode(file_get_contents('php://input'), true); 
+//     $room_id = $_GET['room_id']; 
+//     $user_id = auth()['id']; 
+//     $content = $input['content']; 
 
-    $message = new Message(); 
-    $data = $message->sendMessage($room_id, $user_id, $content);
+//     $message = new Message(); 
+//     $data = $message->sendMessage($room_id, $user_id, $content);
 
-    Response::json(["status" => "success", "message" => "message has been sent successfully", "data" => $data], 201);
-});
+//     Response::json(["status" => "success", "message" => "message has been sent successfully", "data" => $data], 201);
+// });
 
 // show the message
 $router->get('/message/showMessage', function($request){

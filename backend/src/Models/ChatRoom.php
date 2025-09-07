@@ -58,6 +58,12 @@ class ChatRoom {
                 $sql = 'INSERT INTO chat_rooms(id, name, is_group, created_by) VALUES(?,?,?,?)';
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([$id, $name, $isGroup, $user_id]);
+
+                // assign the group creator as admin role
+                $new_id = Uuid::uuid4()->toString(); 
+                $sql4 = 'INSERT INTO chat_room_members (id, room_id, user_id, role, joined_at) VALUES (?,?,?,"admin",now())';
+                $stmt4 = $this->db->prepare($sql4); 
+                $stmt4->execute([$new_id, $id, $user_id]);
             }   
         }
         catch(\Exception $e){

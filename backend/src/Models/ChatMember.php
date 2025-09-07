@@ -14,34 +14,7 @@ class ChatMember {
     public function __construct(){
         $this->db = Database::getInstance();
     }
-    
-    // set the role admin for
-    public function setRole(string $room_id, string $user_id, string $status):null{
 
-        RequestValidator::validate([
-            "room id" => $room_id, 
-            "user id" => $user_id, 
-            "status" => $status,
-        ]); 
-
-        try{
-            $id = Uuid::uuid4()->toString(); 
-            $sql = "SELECT is_group FROM chat_rooms WHERE id = ? AND created_by = ?"; 
-            $stmt = $this->db->prepare($sql); 
-            $stmt->execute([$room_id, $user_id]); 
-            $room_data = $stmt->fetch(PDO::FETCH_ASSOC); 
-
-            if($room_data['is_group'] === true){
-                $sql = 'INSERT INTO chat_room_memebers (id, room_id, user_id, role, joined_at) VALUES (?,?,?,"admin",now())';
-                $stmt = $this->db->prepare($sql); 
-                $stmt->execute([$id, $room_id, $user_id]); 
-            }
-            return null; 
-        }
-        catch(Exception $e){
-            return Response::json(["status" => "error", 'message' => $e->getMessage()], 500); 
-        }
-    }
 
     // add the new member add set the role of it
     public function addMember(string $room_id, string $admin_id, string $user_id , string $role): ?string{
@@ -54,7 +27,7 @@ class ChatMember {
         ]); 
 
         try{
-            $id = $this->id; 
+            $id = Uuid::uuid4()->toString(); 
 
             $sql = "SELECT role FROM chat_room_members WHERE room_id = ? AND user_id = ?";
             $stmt = $this->db->prepare($sql); 
@@ -62,15 +35,15 @@ class ChatMember {
             $member = $stmt->fetch(PDO::FETCH_ASSOC); 
 
             if($member['role'] === 'admin' && $user_id !== $admin_id){
-                $sql = "INSERT INTO chat_room_memebers(id, room_id, user_id, joined_at, role) VALUES(?, ?, ?, now(), ?)"; 
+                $sql = "INSERT INTO chat_room_members(id, room_id, user_id, joined_at, role) VALUES(?, ?, ?, now(), ?)"; 
                 $stmt = $this->db->prepare($sql); 
-                $stmt->exeucte([$id, $room_id, $user_id, $role]); 
+                $stmt->execute([$id, $room_id, $user_id, $role]); 
                 return $id; 
             }
 
             return null; 
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             return Response::json([
                 "status" => "error", 
                 "message" => $e->getMessage()
@@ -94,7 +67,7 @@ class ChatMember {
 
             return null; 
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
@@ -110,10 +83,10 @@ class ChatMember {
         try{
 
             $sql = "SELECT
-                        u.id AS user_id, name, 
-                        FROM chat_room_memebers c
+                        u.id AS user_id, u.name 
+                        FROM chat_room_members c
                         LEFT JOIN users u ON c.user_id = u.id
-                        WHERE id = ? AND room_id =  ? 
+                        WHERE c.id = ? AND c.room_id = ? 
                         ";
                         
             $stmt = $this->db->prepare($sql); 
@@ -122,7 +95,7 @@ class ChatMember {
 
             return $users; 
         }
-        catch(Exception $e){
+        catch(\Exception $e){
             return Response::json(["status" => "error", "message" => $e->getMessage()], 500);
         }
     }
