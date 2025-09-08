@@ -67,10 +67,10 @@ $router->post('/login', function($request){
         Response::json(["status" => "error", "message" => "email or username is required to fill"], 404); 
     } 
 
-    $user = new User(); 
-    $user_login = $user->login($identifier, $password); 
+    $user = new User();
+    $user_login = $user->login($identifier, $password);
 
-    Response::json(["status" => "error", "message" => "login successfully done", "data" => $user_login['user'], "token" => $user_login['token']], 201);
+    Response::json(["status" => "success", "message" => "login successfully done", "data" => $user_login['user'], "token" => $user_login['token']], 201);
 });
 
 $router->get('/profile', function($request){
@@ -159,8 +159,8 @@ $router->get('/contacts/get_particular_contact', function($request){
 });
 
 // remove the status
-$router->delete('/contact/remove_status', function($request){
-    $user_id = auth()['id']; 
+$router->put('/contacts/remove_status', function($request){
+    $user_id = auth()['id'];  
     $contact_id = $_GET['contact_id']; 
 
     $contact = new Contact(); 
@@ -170,7 +170,7 @@ $router->delete('/contact/remove_status', function($request){
 });
 
 // remove the friend/contact
-$router->delete('/contact/remove_contact', function($request){
+$router->delete('/contacts/remove_contact', function($request){
     $user_id = auth()['id']; 
     $contact_id = $_GET['contact_id']; 
 
@@ -192,10 +192,9 @@ $router->post('/room/new_room', function($request){
     $is_group = $input['is_group'];  
     
     $room = new ChatRoom();
-    $room->create($user_id, $is_group, $name, $contact_id); 
+    $room_id = $room->create($user_id, $is_group, $name, $contact_id); 
     
-    Response::json(["status" => "success", "message" => "chat room created successfully"], 201); 
-
+    Response::json(["status" => "success", "message" => "chat room created successfully", "id" => $room_id], 201); 
 });
 
 // show all the rooms of particular user
@@ -229,7 +228,7 @@ $router->get('/room/show_room', function($request){
     Response::json(["status" => "success", "message" => "Received Particular Room data of the user", "data" => $data], 200);     
 });
 
-// upate the particular room data for the paritcular user; 
+// upate the particular room data for the particular user; 
 $router->put('/room/update_room', function($request){
     $input = json_decode(file_get_contents('php://input'), true);
     $room_id = $_GET['room_id'];
@@ -246,7 +245,7 @@ $router->delete('/room/delete_room', function($request){
     $room_id = $_GET['room_id']; 
 
     $room = new ChatRoom();
-    $room->update($room_id);
+    $room->delete($room_id);
 
     Response::json(["status" => "success", "message" => "Received Particular Room data of the user"], 200); 
 });

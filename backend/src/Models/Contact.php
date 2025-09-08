@@ -14,7 +14,7 @@ class Contact{
         $this->db = Database::getInstance(); 
     }
 
-    public function request(string $contact_id, string $user_id): null{
+    public function request(string $contact_id, string $user_id): void{
         
         if(!$contact_id || $contact_id === $user_id){
             Response::json(["status" => "error", 'message' => "Invalid Contact id"], 404); 
@@ -51,9 +51,6 @@ class Contact{
             $sql = "INSERT INTO contacts(id, user_id, contact_id, status) VALUES(?,?,?,'pending')"; 
             $stmt = $this->db->prepare($sql); 
             $stmt->execute([$id, $user_id, $contact_id]);
-            
-            return null; 
-
         }
         catch(\Exception $e){
             Response::json(["status"=>"error","message"=>$e->getMessage()], 500);
@@ -73,6 +70,7 @@ class Contact{
             $stmt->execute([$contact_id, $user_id]);
             $data = $stmt->fetch(PDO::FETCH_ASSOC); 
 
+
             if($data['status'] === 'pending'){
                 $status = 'accepted'; 
                 $sql = 'UPDATE contacts SET status = ? WHERE contact_id = ? and user_id = ?'; 
@@ -89,7 +87,7 @@ class Contact{
             return $data; 
         }
         catch(\Exception $e){
-            Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
+            return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
 
@@ -121,7 +119,7 @@ class Contact{
             return $data; 
         }
         catch(\Exception $e){
-            Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
+            return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
 
@@ -142,12 +140,12 @@ class Contact{
 
             $stmt = $this->db->prepare($sql); 
             $stmt->execute([$user_id]); 
-            $user = $stmt->fetch(PDO::FETCH_ASSOC); 
+            $user = $stmt->fetchAll(PDO::FETCH_ASSOC); 
 
             return $user;
         }
         catch(\Exception $e){
-            Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
+            return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
 
@@ -168,7 +166,7 @@ class Contact{
             return $user; 
         }
         catch(\Exception $e){
-            Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
+            return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     } 
 
@@ -183,7 +181,7 @@ class Contact{
         try{
             $sql = "SELECT status FROM contacts WHERE user_id = ? AND contact_id = ?"; 
             $stmt = $this->db->prepare($sql); 
-            $stmt->execute([$status, $user_id, $contact_id]); 
+            $stmt->execute([$user_id, $contact_id]); 
             $data = $stmt->fetch(PDO::FETCH_ASSOC); 
 
             if($data['status'] === 'accepted'){
@@ -197,7 +195,7 @@ class Contact{
         }
 
         catch(\Exception $e){
-            Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
+            return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
 
     }
@@ -219,7 +217,7 @@ class Contact{
             return null; 
         }
         catch(\Exception $e){
-            Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
+            return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
 }

@@ -73,7 +73,7 @@ describe('User Api', function(){
             "password" => "aashu123"
         ]; 
 
-        $this->client->post('/login', [
+        $this->client->post('/register', [
             "json" => $userData
         ]);
 
@@ -82,12 +82,13 @@ describe('User Api', function(){
             "password" => $userData['password']
         ];
 
-
         $response = $this->client->post('/login', [
             "json" => $userLoginData
         ]);
 
-        expect($response->getStatusCode())->toBe(201); 
+        expect($response->getStatusCode())->toBe(201);
+        $body = json_decode($response->getBody(), true);
+        expect($body)->toHaveKey('token');  
     });
 
     describe('when user register and login', function(){
@@ -99,30 +100,371 @@ describe('User Api', function(){
                 "password" => "aashu123"
             ]; 
 
-            $this->client->post('/login', [
-                "json" => $$userData
+            $this->client->post('/register', [
+                "json" => $userData
             ]);
 
             $userLoginData = [
-                "identifier" => "aashutosh", 
-                "password" => "aashu123"
+                "identifier" => $userData['username'], 
+                "password" => $userData['password']
             ];
 
             $response = $this->client->post('/login', [
                 "json" => $userLoginData
             ]);
 
-            $body = json_decode($response->getBody()->getContents(), true); 
-            
-            $this->login = $body; 
+            $body = json_decode($response->getBody()->getContents(), true);
+                        
+            $this->login = $body;
+
         });
 
-        test('get /getProfile fetches the profile from user', function(){
-            
-            $this->client->get('/getProfile', [
+        test('get /profile fetches the profile from user', function(){
 
+            $this->token = $this->login['token'];  
+
+            $response = $this->client->get('/profile', [
+                "headers" => ["Authorization" => "Bearer ".$this->token]
             ]);
+
+            expect($response->getStatusCode())->toBe(200); 
         });
 
+        test('update /profile updates the profile data of the user', function(){
+
+            $this->token = $this->login['token']; 
+
+            $updateData = [
+                "username" => "aashu"
+            ];
+
+            $response = $this->client->put('/profile', [
+                "headers" => ["Authorization" => "Bearer ".$this->token], 
+                "json" => $updateData
+            ]);
+
+            expect($response->getStatusCode())->toBe(200); 
+        });
+        
+        test('delete /profile deletes the profile data of the user', function(){
+
+            $this->token = $this->login['token']; 
+
+            $response = $this->client->delete('/profile', [
+                "headers" => ["Authorization" => "Bearer ".$this->token]
+            ]);
+
+            expect($response->getStatusCode())->toBe(200); 
+        }); 
     });
-}); 
+})->skip(); 
+
+
+// --- CONTACT ENDPOINT TESTS ---
+
+describe('Contact endpoint', function(){
+    beforeEach(function(){
+
+        $this->client = getClient();
+
+        $userData = [
+            "username" => "aashutosh", 
+            "name" => "aashu barhate", 
+            "email" => "example@gmail.com",
+            "password" => "aashu123"
+        ]; 
+        
+        $this->client->post('/register', [
+            "json" => $userData
+        ]);
+        
+        $userLoginData = [
+            "identifier" => $userData['username'], 
+            "password" => $userData['password']
+        ];
+        
+        $response = $this->client->post('/login', [
+            "json" => $userLoginData
+        ]);
+        
+        $body = json_decode($response->getBody()->getContents(), true);
+                    
+        $this->login = $body;
+
+        $newuserData = [
+            "username" => "shubham", 
+            "name" => "shubham palmate", 
+            "email" => "shubham@gmail.com",
+            "password" => "shubham123"
+        ]; 
+        
+        $register = $this->client->post('/register', [
+            "json" => $newuserData
+        ]); 
+
+        $body = json_decode($register->getBody(), true);
+
+        $this->contact_id = $body['id'];
+
+    }); 
+
+    test('post /contacts/request send the request to the friend', function(){
+
+        $this->token = $this->login['token'];
+
+        $contact_id = $this->contact_id;
+        
+        $response = $this->client->post("/contacts/request?contact_id=$contact_id", [
+            "headers" => ["Authorization" => "Bearer ".$this->token] 
+        ]);  
+
+        expect($response->getStatusCode())->toBe(201);
+    }); 
+
+    test('update /contacts/add accepts the request by the friend', function(){
+
+        $this->token = $this->login['token']; 
+
+        $contact_id = $this->contact_id; 
+
+        $this->client->post("/contacts/request?contact_id=$contact_id",[
+            "headers" => ["Authorization" => "Bearer ".$this->token]
+        ]); 
+
+        $response = $this->client->put("/contacts/add?contact_id=$contact_id", [
+            "headers" => ["Authorization" => "Bearer ".$this->token] 
+        ]); 
+
+        expect($response->getStatusCode())->toBe(200); 
+    });
+
+    test('update /contacts/update unblock the user', function(){
+
+        $this->token = $this->login['token']; 
+
+        $contact_id = $this->contact_id;
+
+        $this->client->post("/contacts/request?contact_id=$contact_id",[
+            "headers" => ["Authorization" => "Bearer ".$this->token]
+        ]);
+
+        $response = $this->client->put("/contacts/update?contact_id=$contact_id", [
+            "headers" => ["Authorization" => "Bearer ".$this->token]
+        ]); 
+
+        expect($response->getStatusCode())->toBe(200); 
+    }); 
+
+    test('get /contacts/get shows all the contacts/friends', function(){
+
+        $this->token = $this->login['token'];
+
+        $contact_id = $this->contact_id; 
+
+        $response = $this->client->get("/contacts/get", [
+            "headers" => ["Authorization" => "Bearer ".$this->token]
+        ]); 
+
+        expect($response->getStatusCode())->toBe(200); 
+    }); 
+
+    test('get /contacts/get_particuar_contact show the particular contact/friend', function(){
+
+        $this->token = $this->login['token'];
+
+        $contact_id = $this->contact_id;
+
+        $this->client->post("/contacts/request?contact_id=$contact_id",[
+            "headers" => ["Authorization" => "Bearer ".$this->token]
+        ]);
+
+        $response = $this->client->get("/contacts/get_particular_contact?contact_id=$contact_id", [
+            "headers" => ["Authorization" => "Bearer ".$this->token]
+        ]); 
+
+        expect($response->getStatusCode())->toBe(200); 
+    }); 
+
+    test('put /contacts/remove_status unfollow the friend by the user', function(){
+
+        $this->token = $this->login['token'];
+        
+        $contact_id = $this->contact_id;
+        
+        $this->client->post("/contacts/request?contact_id=$contact_id",[
+            "headers" => ["Authorization" => "Bearer ".$this->token]
+        ]);
+
+        $accepted = $this->client->put("/contacts/add?contact_id=$contact_id", [
+            "headers" => ["Authorization" => "Bearer ".$this->token] 
+        ]);
+
+        $response = $this->client->put("/contacts/remove_status?contact_id=$contact_id", [
+            "headers" => ["Authorization" => "Bearer ".$this->token]
+        ]); 
+
+        expect($response->getStatusCode())->toBe(200);
+    }); 
+
+    test('delete /contacts/remove_contact delete the contact of the user', function(){
+
+        $this->token = $this->login['token']; 
+        $contact_id = $this->contact_id;
+
+        $response = $this->client->delete("/contacts/remove_contact?contact_id=$contact_id", [
+            "headers" => ["Authorization" => "Bearer ".$this->token]
+        ]);
+
+        expect($response->getStatusCode())->toBe(200);
+    }); 
+})->skip();
+
+
+// -- Chat_room tests -- 
+describe("ChatRoom endpoints tests", function(){
+    beforeEach(function(){
+
+        $this->client = getClient();
+
+        $userData = [
+            "username" => "aashutosh", 
+            "name" => "aashu barhate", 
+            "email" => "example@gmail.com",
+            "password" => "aashu123"
+        ]; 
+        
+        $this->client->post('/register', [
+            "json" => $userData
+        ]);
+        
+        $userLoginData = [
+            "identifier" => $userData['username'], 
+            "password" => $userData['password']
+        ];
+        
+        $response = $this->client->post('/login', [
+            "json" => $userLoginData
+        ]);
+        
+        $body = json_decode($response->getBody()->getContents(), true);
+                    
+        $this->login = $body;
+
+        $newuserData = [
+            "username" => "shubham", 
+            "name" => "shubham palmate", 
+            "email" => "shubham@gmail.com",
+            "password" => "shubham123"
+        ]; 
+        
+        $register = $this->client->post('/register', [
+            "json" => $newuserData
+        ]); 
+
+        $body = json_decode($register->getBody(), true);
+
+        $this->contact_id = $body['id'];
+    });
+
+    test('post /room/new_room creates the new chat room', function(){
+
+        $this->token = $this->login['token']; 
+
+        $contact_id = $this->contact_id; 
+
+        $inputData = [
+            "name" => "Duess", 
+            "is_group" => true
+        ];
+
+        $response = $this->client->post("/room/new_room?contact_id=$contact_id", [
+            "headers" => ["Authorization" => "Bearer ".$this->token],
+            "json" => $inputData
+        ]); 
+
+        expect($response->getStatusCode())->toBe(201); 
+    }); 
+
+    test('get /room/show_user_rooms fetches all the room data of user', function(){
+        $this->token = $this->login['token']; 
+
+        $response = $this->client->get("/room/show_user_rooms", [
+            "headers" => ["Authorization" => "Bearer ".$this->token]
+        ]); 
+
+        expect($response->getStatusCode())->toBe(200); 
+    });
+
+    test('get /room/show_group_rooms fetches all groups', function(){
+        $this->token = $this->login['token'];
+
+        $response = $this->client->get("/room/show_group_rooms", [
+            "headers" => ["Authorization" => "Bearer ".$this->token]
+        ]);
+
+        expect($response->getStatusCode())->toBe(200); 
+    });    
+
+    describe('when the room exists', function(){
+
+        beforeEach(function(){
+            $this->token = $this->login['token'];
+
+            $contact_id = $this->contact_id; 
+
+            $Data = [
+                "is_group" => false
+            ];
+
+            $chatRoom = $this->client->post("/room/new_room?contact_id=$contact_id", [
+                "headers" => ["Authorization" => "Bearer ".$this->token],
+                "json" => $Data
+            ]);
+            
+            $body = json_decode($chatRoom->getBody(), true); 
+
+            $this->room_id = $body['id'];
+        }); 
+
+        test('get /room/show_rooms fetches particular room data', function(){
+            $this->token = $this->login['token'];
+            $room_id = $this->room_id;
+            
+            $response = $this->client->get("/room/show_room?room_id=$room_id", [
+                "headers" => ["Authorization" => "Bearer ".$this->token]
+            ]); 
+
+            $body = json_decode($response->getBody(), true); 
+ 
+
+            expect($response->getStatusCode())->toBe(200); 
+        });
+        
+        test('update /room/update_room updates particular room data', function(){
+            $this->token = $this->login['token']; 
+            $room_id = $this->room_id; 
+
+            $updateData = [
+                "name" => "divide"
+            ]; 
+
+            $response = $this->client->put("/room/update_room?room_id=$room_id", [
+                "headers" => ["Authorization" => "Bearer ".$this->token],
+                "json" => $updateData
+            ]); 
+
+            expect($response->getStatusCode())->toBe(200); 
+        }); 
+
+        test('delete /room/delete_room delete the particular room data', function(){
+            $this->token = $this->login['token']; 
+            $room_id = $this->room_id; 
+
+            $response = $this->client->delete("/room/delete_room?room_id=$room_id", [
+                "headers" => ["Authorization" => "Bearer ".$this->token]
+            ]); 
+
+            expect($response->getStatusCode())->toBe(200);
+        });
+    });
+})->skip(); 

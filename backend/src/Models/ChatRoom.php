@@ -16,7 +16,7 @@ class ChatRoom {
         $this->db = Database::getInstance(); 
     }
 
-    public function create(string $user_id, bool $is_group, ?string $name=null, ?string $contact_id=null): void{
+    public function create(string $user_id, bool $is_group, ?string $name=null, ?string $contact_id=null): ?string{
         $id = Uuid::uuid4()->toString(); 
 
         RequestValidator::validate([
@@ -47,10 +47,11 @@ class ChatRoom {
 
                 if($user_name && $user_name['status'] === 'accepted'){
                     // create the new room
-                    $id2 = Uuid::uuid4()->toString(); 
+                    $id2 = $user_id; 
                     $sql3 = "INSERT INTO chat_rooms(id, name, is_group, created_by) VALUES(?,?,?,?)";
                     $stmt3 = $this->db->prepare($sql3); 
-                    $stmt3->execute([$id2, $user_name['name'], $isGroup, $user_id]);
+                    $stmt3->execute([$id2, $user_name['name'], $isGroup, $user_id]);  
+                    return $id2; 
                 }                
             }
             else{
@@ -65,11 +66,11 @@ class ChatRoom {
                 $stmt4 = $this->db->prepare($sql4); 
                 $stmt4->execute([$new_id, $id, $user_id]);
             }   
+            return $id; 
         }
         catch(\Exception $e){
             Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
-
     }
 
     // show all the rooms of particular user
@@ -139,13 +140,13 @@ class ChatRoom {
             $sql = "SELECT * FROM chat_rooms WHERE id = ? AND created_by = ?"; 
             $stmt = $this->db->prepare($sql); 
             $stmt->execute([$id, $user_id]);
-            $room_data = $stmt->fetch(PDO::FETCH_ASSOC); 
-
+            $room_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
             return $room_data; 
         }
         catch(\Exception $e){
-            return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
-        }
+            Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
+        } 
     }
     
     // update the room data of particular user
@@ -164,7 +165,7 @@ class ChatRoom {
             $sql = "SELECT * FROM chat_rooms WHERE id = ?"; 
             $stmt = $this->db->prepare($sql); 
             $stmt->execute([$id]); 
-            $room_data = $stmt->fetch(PDO::FETCH_ASSOC); 
+            $room_data = $stmt->fetchAll(PDO::FETCH_ASSOC); 
 
             return $room_data; 
         }

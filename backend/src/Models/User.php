@@ -39,10 +39,14 @@ class User {
             $stmt = $this->db->prepare('SELECT * FROM users WHERE username = :identifier OR email = :identifier');
             $stmt->execute([
                 ":identifier" => $identifier
-            ]); 
-
+            ]);
+            
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
             
+            if(!$user && !password_verify($password, $user['password'])){
+                return Response::json(["status" => "error", "message" => "Authentication failed"], 400); 
+            }
+
             $payload = [
                 'iss' => 'http://localhost:8080', 
                 'iat' => time(), 
@@ -53,18 +57,15 @@ class User {
 
             $token = Auth::generateToken($payload); 
 
-            if($user && password_verify($password, $user['password'])){
-                return [
-                    "user" => $user, 
-                    "token" => $token
-                ]; 
-            }
+            return [
+                "user" => $user, 
+                "token" => $token
+            ];
+
         }
         catch(\Exception $e){
             Response::json(["status"=>"error", "message" => $e->getMessage()], 500); 
         }
-        
-        return null; 
     }
 
     public function showProfile(string $userId): ?array{
