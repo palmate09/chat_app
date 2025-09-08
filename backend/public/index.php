@@ -70,7 +70,7 @@ $router->post('/login', function($request){
     $user = new User(); 
     $user_login = $user->login($identifier, $password); 
 
-    Response::json(["status" => "error", "message" => "login successfully done", "data" => $user_login['user'], "token" => $user_login['token']], 200);
+    Response::json(["status" => "error", "message" => "login successfully done", "data" => $user_login['user'], "token" => $user_login['token']], 201);
 });
 
 $router->get('/profile', function($request){

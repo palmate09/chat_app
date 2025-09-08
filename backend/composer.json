@@ -21,7 +21,8 @@
         "ramsey/uuid": "^4.9"
     },
     "require-dev": {
-        "pestphp/pest": "^4.0"
+        "pestphp/pest": "^4.0",
+        "guzzlehttp/guzzle": "^7.10"
     },
     "config": {
         "allow-plugins": {
