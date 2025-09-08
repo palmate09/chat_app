@@ -16,7 +16,7 @@ class ChatRoom {
         $this->db = Database::getInstance(); 
     }
 
-    public function create(string $user_id, bool $is_group, ?string $name=null, ?string $contact_id=null): ?string{
+    public function create(string $user_id, bool $is_group, ?string $name=null, ?string $contact_id=null): ?array{
         $id = Uuid::uuid4()->toString(); 
 
         RequestValidator::validate([
@@ -66,7 +66,10 @@ class ChatRoom {
                 $stmt4 = $this->db->prepare($sql4); 
                 $stmt4->execute([$new_id, $id, $user_id]);
             }   
-            return $id; 
+            return [
+                "id" => $id,
+                "new_id" => $new_id
+            ]; 
         }
         catch(\Exception $e){
             Response::json(["status" => "error", "message" => $e->getMessage()], 500); 

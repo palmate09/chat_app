@@ -261,15 +261,15 @@ $router->post('/room/add_new_member', function($request){
     $admin_id = auth()['id']; 
 
     $member = new ChatMember(); 
-    $member->addMember($room_id, $admin_id, $user_id, $role); 
+    $member_id = $member->addMember($room_id, $admin_id, $user_id, $role); 
 
-    Response::json(["status" => "success", "message" => "New member added successfully"], 201);
+    Response::json(["status" => "success", "message" => "New member added successfully", "id" => $id], 201);
 
 }); 
 
 // remove the member by the admin in the group
 $router->delete('/room/remove_member', function($request){
-    $member_id = $_GET['memebr_id']; 
+    $member_id = $_GET['member_id']; 
     $room_id = $_GET['room_id']; 
     $user_id = auth()['id']; 
 
@@ -279,15 +279,25 @@ $router->delete('/room/remove_member', function($request){
     Response::json(["status" => "success", "message" => "member has been deleted successfully"], 200);
 }); 
 
-// show all the member for the particular group
-$router->get('/room/get_all_member', function($request){
+// show particular member for the particular group
+$router->get('/room/get_member', function($request){
     $member_id = $_GET['member_id']; 
     $room_id = $_GET['room_id'];
 
     $member = new ChatMember(); 
-    $data = $member->showAllMemeber($member_id, $room_id);
+    $data = $member->getMemeber($member_id, $room_id);
 
     Response::json(["status" => "success", "message" => "All members received successfully", "data" => $data], 200); 
+}); 
+
+// show all the members of particular group
+$router->get('/room/get_all_members', function($request){
+    $room_id = $_GET['room_id']; 
+
+    $members= new ChatMember(); 
+    $data = $members->showAllMembers($room_id); 
+
+    Response::json(["status" => "success", "message" => "all members received successfully", "data" => $data], 200); 
 }); 
 
 // Message  endpoints 

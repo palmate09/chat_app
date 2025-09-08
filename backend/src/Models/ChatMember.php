@@ -38,10 +38,9 @@ class ChatMember {
                 $sql = "INSERT INTO chat_room_members(id, room_id, user_id, joined_at, role) VALUES(?, ?, ?, now(), ?)"; 
                 $stmt = $this->db->prepare($sql); 
                 $stmt->execute([$id, $room_id, $user_id, $role]); 
-                return $id; 
             }
 
-            return null; 
+            return $id; 
         }
         catch(\Exception $e){
             return Response::json([
@@ -49,10 +48,11 @@ class ChatMember {
                 "message" => $e->getMessage()
             ], 500); 
         }
+        return null; 
     }
 
     // remove the member from the particular group
-    public function removeMember(string $id, string $room_id, string $user_id): null{
+    public function removeMember(string $id, string $room_id, string $user_id): void{
         RequestValidator::validate([
             "members id" => $id, 
             "room id" => $room_id, 
@@ -65,15 +65,14 @@ class ChatMember {
             $stmt = $this->db->prepare($sql); 
             $stmt->execute([$id, $room_id, $user_id]); 
 
-            return null; 
         }
         catch(\Exception $e){
-            return Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
+            Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
 
-    // show all memeber of the particular group
-    public function showAllMemeber(string $id, string $room_id): ?array{
+    // get particular memeber of the particular group
+    public function getMemeber(string $id, string $room_id): ?array{
 
         RequestValidator::validate([
             "members id" => $id, 
@@ -82,13 +81,7 @@ class ChatMember {
         
         try{
 
-            $sql = "SELECT
-                        u.id AS user_id, u.name 
-                        FROM chat_room_members c
-                        LEFT JOIN users u ON c.user_id = u.id
-                        WHERE c.id = ? AND c.room_id = ? 
-                        ";
-                        
+            $sql = "SELECT* FROM chat_room_members WHERE id = ? AND room_id = ?";                        
             $stmt = $this->db->prepare($sql); 
             $stmt->execute([$id, $room_id]); 
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC); 
@@ -97,6 +90,33 @@ class ChatMember {
         }
         catch(\Exception $e){
             return Response::json(["status" => "error", "message" => $e->getMessage()], 500);
+        }
+    }
+
+    // get all the members of particular group
+    public function showAllMembers(string $room_id): ?array{
+
+        RequestValidator::validate([
+            "room id" => $room_id
+        ]); 
+
+        try{
+
+            $sql = "SELECT
+                        u.id AS user_id, u.name 
+                        FROM chat_room_members c
+                        LEFT JOIN users u ON c.user_id = u.id
+                        WHERE c.room_id = ? 
+                        ";
+
+            $stmt = $this->db->prepare($sql); 
+            $stmt->execute([$room_id]);
+            $users = $stmt->fetchAll(PDO::FETCH_ASSOC); 
+
+            return $users; 
+        }
+        catch(\Exception $e){
+            Response::json(["status" => "error", "message" => $e->getMessage()], 500); 
         }
     }
 }

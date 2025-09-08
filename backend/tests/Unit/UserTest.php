@@ -382,6 +382,8 @@ describe("ChatRoom endpoints tests", function(){
             "json" => $inputData
         ]); 
 
+        $body = json_decode($response->getBody(), true); 
+
         expect($response->getStatusCode())->toBe(201); 
     }); 
 
@@ -423,7 +425,7 @@ describe("ChatRoom endpoints tests", function(){
             
             $body = json_decode($chatRoom->getBody(), true); 
 
-            $this->room_id = $body['id'];
+            $this->room_id = $body['id']['id'];
         }); 
 
         test('get /room/show_rooms fetches particular room data', function(){
@@ -468,3 +470,130 @@ describe("ChatRoom endpoints tests", function(){
         });
     });
 })->skip(); 
+
+// -- Chat Room Members tests -- 
+describe("ChatMember endpoint tests", function(){
+    beforeEach(function(){
+        $this->client = getClient();
+
+        $userData = [
+            "username" => "aashutosh", 
+            "name" => "aashu barhate", 
+            "email" => "example@gmail.com",
+            "password" => "aashu123"
+        ]; 
+        
+        $this->client->post('/register', [
+            "json" => $userData
+        ]);
+        
+        $userLoginData = [
+            "identifier" => $userData['username'], 
+            "password" => $userData['password']
+        ];
+        
+        $response = $this->client->post('/login', [
+            "json" => $userLoginData
+        ]);
+        
+        $body = json_decode($response->getBody()->getContents(), true);
+                    
+        $this->login = $body;
+
+        $newuserData = [
+            "username" => "shubham", 
+            "name" => "shubham palmate", 
+            "email" => "shubham@gmail.com",
+            "password" => "shubham123"
+        ]; 
+        
+        $register = $this->client->post('/register', [
+            "json" => $newuserData
+        ]); 
+
+        $body = json_decode($register->getBody(), true);
+
+        $this->contact_id = $body['id'];
+
+        $inputData = [
+            "name" => "Duess", 
+            "is_group" => true
+        ];
+
+        $newResponse = $this->client->post("/room/new_room?contact_id={$this->contact_id}", [
+            "headers" => ["Authorization" => "Bearer ".$this->login['token']],
+            "json" => $inputData
+        ]); 
+
+        $newBody = json_decode($newResponse->getBody(), true);
+
+        $this->room_id = $newBody['id']; 
+    });
+
+    test('post /room/add_new_member adds new member by admin only', function(){
+
+        $this->token = $this->login['token']; 
+        $user_id = $this->contact_id; 
+        $room_id = $this->room_id['id']; 
+
+        $inputData = [
+            "role" => "member"
+        ];
+
+        $response = $this->client->post("/room/add_new_member?user_id=$user_id&room_id=$room_id", [
+            "headers" => ["Authorization" => "Bearer ".$this->token],
+            "json" => $inputData
+        ]); 
+
+        $body = json_decode($response->getBody(), true); 
+
+        expect($response->getStatusCode())->toBe(201); 
+    });
+
+    describe('when the member exits', function(){
+        beforeEach(function(){
+            $this->token = $this->login['token'];
+            $user_id = $this->contact_id; 
+            $room_id = $this->room_id['id']; 
+
+            $this->member_id = $this->room_id['new_id']; 
+        }); 
+
+        test('delete /room/remove_member removes member from the group',function(){
+            $this->token = $this->login['token']; 
+            $room_id = $this->room_id['id']; 
+            $member_id =$this->member_id;
+            
+            $response = $this->client->delete("/room/remove_member?room_id=$room_id&member_id=$member_id", [
+                "headers" => ["Authorization" => "Bearer ".$this->token]
+            ]);
+            
+            expect($response->getStatusCode())->toBe(200); 
+        }); 
+
+        test('get /room/get_member shows complete member data', function(){
+            $this->token = $this->login['token']; 
+            $room_id = $this->room_id['id']; 
+            $member_id = $this->member_id;
+            
+            $response = $this->client->get("/room/get_member?room_id=$room_id&member_id=$member_id", [
+                "headers" => ["Authorization" => "Bearer ".$this->token]
+            ]); 
+
+            expect($response->getStatusCode())->toBe(200); 
+        }); 
+
+        test('get /room/get_all_members show all the members in the group', function(){
+            $this->token = $this->login['token']; 
+            $room_id = $this->room_id['id']; 
+
+            $response = $this->client->get("/room/get_all_members?room_id=$room_id", [
+                "headers" => ["Authorization" => "Bearer ".$this->token]
+            ]);
+
+            expect($response->getStatusCode())->toBe(200); 
+        }); 
+    });
+})->skip(); 
+
+
