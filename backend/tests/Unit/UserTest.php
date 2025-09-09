@@ -5,6 +5,7 @@ require __DIR__ . '/../../vendor/autoload.php';
 // getting the GuzzleHttp
 use GuzzleHttp\Client; 
 use GuzzleHttp\Exception\RequestException; 
+use WebSocket\wsClient; 
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../../');
 $dotenv->load();
@@ -14,7 +15,7 @@ function getClient(){
 }
 
 beforeEach(function(){
-    $host    = $_ENV['DB_HOST']; 
+    $host = $_ENV['DB_HOST']; 
     $name = $_ENV['DB_NAME']; 
     $pass = $_ENV['DB_PASS']; 
     $user = $_ENV['DB_USER'];
@@ -597,3 +598,87 @@ describe("ChatMember endpoint tests", function(){
 })->skip(); 
 
 
+// -- WebSocket Test ---
+describe("WebSocket endpoint tests", function(){
+    beforeEach(function(){
+        $this->client = getClient();
+
+        $userData = [
+            "username" => "aashutosh", 
+            "name" => "aashu barhate", 
+            "email" => "example@gmail.com",
+            "password" => "aashu123"
+        ]; 
+        
+        $this->client->post('/register', [
+            "json" => $userData
+        ]);
+        
+        $userLoginData = [
+            "identifier" => $userData['username'], 
+            "password" => $userData['password']
+        ];
+        
+        $response = $this->client->post('/login', [
+            "json" => $userLoginData
+        ]);
+        
+        $body = json_decode($response->getBody()->getContents(), true);
+                    
+        $this->login = $body;
+
+        $newuserData = [
+            "username" => "shubham", 
+            "name" => "shubham palmate", 
+            "email" => "shubham@gmail.com",
+            "password" => "shubham123"
+        ]; 
+        
+        $register = $this->client->post('/register', [
+            "json" => $newuserData
+        ]); 
+
+        $body1 = json_decode($register->getBody(), true);
+
+        $this->contact_id = $body1['id'];
+
+        $this->token = $this->login['token']; 
+
+        $contact_id = $this->contact_id; 
+
+        $this->client->post("/contacts/request?contact_id=$contact_id",[
+            "headers" => ["Authorization" => "Bearer ".$this->token]
+        ]); 
+
+        $this->client->put("/contacts/add?contact_id=$contact_id", [
+            "headers" => ["Authorization" => "Bearer ".$this->token] 
+        ]);
+
+        $inputData = [
+            "is_group" => false
+        ];
+
+        $response1 = $this->client->post("/room/new_room?contact_id=$contact_id", [
+            "headers" => ["Authorization" => "Bearer ".$this->token],
+            "json" => $inputData
+        ]); 
+
+        $body2 = json_decode($response1->getBody(), true);
+
+        var_dump($body2);  
+
+        $this->room_id = $response1['id']['id'];
+
+        $room_id = $this->room_id; 
+
+        $this->wsclient = new wsClient("ws://localhost:8080?user_id=$user_id&contact_id=$contact_id&room_id=$room_id");
+    });
+
+    afterEach(function(){
+        $this->wsclient->close(); 
+    });
+
+    test('user connected to the ws server', function(){
+        expect($this->client)->toBeInstanceOf(wsClient::class);
+    });
+});

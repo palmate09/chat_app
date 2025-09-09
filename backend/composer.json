@@ -22,7 +22,9 @@
     },
     "require-dev": {
         "pestphp/pest": "^4.0",
-        "guzzlehttp/guzzle": "^7.10"
+        "guzzlehttp/guzzle": "^7.10",
+        "textalk/websocket": "^1.5",
+        "mockery/mockery": "^1.6"
     },
     "config": {
         "allow-plugins": {

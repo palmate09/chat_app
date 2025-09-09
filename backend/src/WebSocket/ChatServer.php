@@ -28,32 +28,47 @@ class ChatServer implements MessageComponentInterface {
         //Extract token from the query string; 
         $queryString = $conn->httpRequest->getUri()->getQuery(); 
         parse_str($queryString, $params);
-        $token = $params['token'] ?? null;
+        $user_id = $params['user_id'] ?? null;
+        $room_id = $params['room_id'] ?? null; 
+        $receiver_id = $params['receiver_id'];
         
-        if(!$token){
+        if(!$user_id || !$room_id || !$receiver_id){
             $conn->close(); 
             return; 
         }
 
-        $payload = Auth::verifyToken($token); 
-        if(!$payload || !isset($payload['id'])){
-            $conn->close(); 
-            return;
-        }
+        // $payload = Auth::verifyToken($token); 
+        // if(!$payload || !isset($payload['id'])){
+        //     $conn->close(); 
+        //     return;
+        // }
 
-        $user_id = $payload['id']; 
-        $conn->user = $payload; 
+        // $user_id = $payload['id']; 
+        // $conn->user = $payload; 
 
         $conn->userId = $user_id;
+        $conn->roomId = $room_id; 
+        $conn->receiverId = $receiver_id; 
 
         if(!isset($this->userConnections[$user_id])){
             $this->userConnections[$user_id] = [];  
         }
 
-        $this->userConnections[$user_id]  = $conn; 
+        if(!isset($this->userConnections[$room_id])){
+            $this->userConnections[$room_id] = []; 
+        }
+
+        if(!isset($this->userConnections[$receiver_id])){
+            $this->userConnections[$receiver_id] = []; 
+        }
+
+        $this->userConnections[$user_id] = $conn; 
+        $this->userConnections[$room_id] = $conn; 
+        $this->userConnections[$receiver_id] = $conn; 
+
         $this->userModel->updateStatus($user_id, 'online');
         
-        echo "User $user_id Connected\n"; 
+        echo "User $user_id Connected with Room $room_id\n"; 
     }
 
     public function onMessage(ConnectionInterface $from, $msg) {
@@ -61,16 +76,15 @@ class ChatServer implements MessageComponentInterface {
         if(!$data) return; 
         
         $sender_id = $from->userId;
+        $room_id = $from->roomId; 
         
         switch($data['action']){
 
             case "send": 
-                $receiver_id = $data['receiver_id'] ?? null;
-
-                var_dump($receiver_id); 
+                $receiver_id = $from->receiverId; 
 
                 $msg_data = $this->messageModel->sendMessage(
-                    $data['room_id'],
+                    $room_id,
                     $sender_id,
                     $data['text'],
                     $receiver_id
@@ -79,7 +93,7 @@ class ChatServer implements MessageComponentInterface {
                 $msg_id = $msg_data['message_id'];
                 $payload = json_encode([
                     'action' => 'send',
-                    'room_id' => $data['room_id'], 
+                    'room_id' => $room_id, 
                     'sender_id' => $sender_id,
                     'receiver_id' => $receiver_id ?? null,
                     'message_text' => $data['text'], 

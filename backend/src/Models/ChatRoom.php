@@ -51,7 +51,7 @@ class ChatRoom {
                     $sql3 = "INSERT INTO chat_rooms(id, name, is_group, created_by) VALUES(?,?,?,?)";
                     $stmt3 = $this->db->prepare($sql3); 
                     $stmt3->execute([$id2, $user_name['name'], $isGroup, $user_id]);  
-                    return $id2; 
+                    return ["id" => $id2]; 
                 }                
             }
             else{
