@@ -116,7 +116,7 @@ class Message{
 
         try{
             // update the messages content
-            $sql = "UPDATE messages SET content = ? WHERE id = ? AND user_id = ?";
+            $sql = "UPDATE messages SET content = ? WHERE id = ? AND sender_id = ?";
             $stmt = $this->db->prepare($sql); 
             $stmt->execute([$content, $id, $user_id]);
             

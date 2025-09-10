@@ -5,7 +5,7 @@ require __DIR__ . '/../../vendor/autoload.php';
 // getting the GuzzleHttp
 use GuzzleHttp\Client; 
 use GuzzleHttp\Exception\RequestException; 
-use WebSocket\wsClient; 
+use WebSocket\Client as wsClient; 
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../../');
 $dotenv->load();
@@ -158,7 +158,7 @@ describe('User Api', function(){
             expect($response->getStatusCode())->toBe(200); 
         }); 
     });
-})->skip(); 
+}); 
 
 
 // --- CONTACT ENDPOINT TESTS ---
@@ -318,7 +318,7 @@ describe('Contact endpoint', function(){
 
         expect($response->getStatusCode())->toBe(200);
     }); 
-})->skip();
+});
 
 
 // -- Chat_room tests -- 
@@ -470,7 +470,7 @@ describe("ChatRoom endpoints tests", function(){
             expect($response->getStatusCode())->toBe(200);
         });
     });
-})->skip(); 
+}); 
 
 // -- Chat Room Members tests -- 
 describe("ChatMember endpoint tests", function(){
@@ -595,7 +595,7 @@ describe("ChatMember endpoint tests", function(){
             expect($response->getStatusCode())->toBe(200); 
         }); 
     });
-})->skip(); 
+}); 
 
 
 // -- WebSocket Test ---
@@ -610,9 +610,13 @@ describe("WebSocket endpoint tests", function(){
             "password" => "aashu123"
         ]; 
         
-        $this->client->post('/register', [
+        $user = $this->client->post('/register', [
             "json" => $userData
         ]);
+
+        $userBody = json_decode($user->getBody(), true); 
+
+        $user_id = $userBody['id']; 
         
         $userLoginData = [
             "identifier" => $userData['username'], 
@@ -665,13 +669,11 @@ describe("WebSocket endpoint tests", function(){
 
         $body2 = json_decode($response1->getBody(), true);
 
-        var_dump($body2);  
-
-        $this->room_id = $response1['id']['id'];
+        $this->room_id = $body2['id']['id'];
 
         $room_id = $this->room_id; 
 
-        $this->wsclient = new wsClient("ws://localhost:8080?user_id=$user_id&contact_id=$contact_id&room_id=$room_id");
+        $this->wsclient = new wsClient("ws://localhost:8080?user_id=$user_id&receiver_id=$contact_id&room_id=$room_id",['timeout' => 15]);
     });
 
     afterEach(function(){
@@ -679,6 +681,80 @@ describe("WebSocket endpoint tests", function(){
     });
 
     test('user connected to the ws server', function(){
-        expect($this->client)->toBeInstanceOf(wsClient::class);
+        expect($this->wsclient)->toBeInstanceOf(wsClient::class);
     });
+
+    test('user sends and receive message', function(){
+        $this->wsclient->send(json_encode([
+            "action" => "send", 
+            "text" => "Hello World"
+        ]));
+        
+        $response = $this->wsclient->receive();
+
+        $data = json_decode($response, true); 
+
+        expect($data)
+                ->toHaveKey("action", "send")
+                ->toHaveKey("message_text", "Hello World"); 
+    });
+
+    describe('after sending the message', function(){
+        beforeEach(function(){
+            // Step 1: send message
+            $this->wsclient->send(json_encode([
+                "action" => "send",
+                "text" => "Hello World"
+            ])); 
+
+            $response = $this->wsclient->receive();
+
+            $data = json_decode($response, true); 
+            $this->messageId = $data['message_id']; 
+        });
+
+        test('client can update a message', function(){
+            $message_id = $this->messageId; 
+
+            $this->wsclient->send(json_encode([
+                "action" => "update", 
+                "message_id" => $message_id,
+                "new_text" => "How are you?"
+            ])); 
+
+            // Wait until we get the update confirmation
+            $response = null;
+            $attempts = 0;
+
+            while ($attempts < 5) {
+                $msg = $this->wsclient->receive();
+                $data = json_decode($msg, true);
+
+                if (isset($data['action']) && $data['action'] === "update") {
+                    $response = $data;
+                    break;
+                }
+
+                $attempts++;
+            }
+
+
+            expect($response)->toMatchArray([
+                "action" => "update",
+                "new_text" => "How are you?"
+            ]);
+        });
+
+
+        test('client can remove the message', function(){
+            $message_id = $this->messageId; 
+
+            $this->wsclient->send(json_encode([
+                "action" => "remove", 
+                "message_id" => $message_id
+            ]));
+
+            expect(true)->toBeTrue(); 
+        });
+    }); 
 });

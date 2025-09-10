@@ -30,41 +30,31 @@ class ChatServer implements MessageComponentInterface {
         parse_str($queryString, $params);
         $user_id = $params['user_id'] ?? null;
         $room_id = $params['room_id'] ?? null; 
-        $receiver_id = $params['receiver_id'];
+        $receiver_id = $params['receiver_id']??null;
         
         if(!$user_id || !$room_id || !$receiver_id){
             $conn->close(); 
             return; 
-        }
-
-        // $payload = Auth::verifyToken($token); 
-        // if(!$payload || !isset($payload['id'])){
-        //     $conn->close(); 
-        //     return;
-        // }
-
-        // $user_id = $payload['id']; 
-        // $conn->user = $payload; 
+        } 
 
         $conn->userId = $user_id;
         $conn->roomId = $room_id; 
         $conn->receiverId = $receiver_id; 
 
-        if(!isset($this->userConnections[$user_id])){
-            $this->userConnections[$user_id] = [];  
+        if (!isset($this->userConnections[$user_id])) {
+            $this->userConnections[$user_id] = [];
         }
+        $this->userConnections[$user_id][] = $conn;
 
-        if(!isset($this->userConnections[$room_id])){
-            $this->userConnections[$room_id] = []; 
+        if (!isset($this->userConnections[$room_id])) {
+            $this->userConnections[$room_id] = [];
         }
+        $this->userConnections[$room_id][] = $conn;
 
-        if(!isset($this->userConnections[$receiver_id])){
-            $this->userConnections[$receiver_id] = []; 
+        if (!isset($this->userConnections[$receiver_id])) {
+            $this->userConnections[$receiver_id] = [];
         }
-
-        $this->userConnections[$user_id] = $conn; 
-        $this->userConnections[$room_id] = $conn; 
-        $this->userConnections[$receiver_id] = $conn; 
+        $this->userConnections[$receiver_id][] = $conn;
 
         $this->userModel->updateStatus($user_id, 'online');
         
@@ -101,6 +91,9 @@ class ChatServer implements MessageComponentInterface {
                     "created_at" => date("Y-m-d H:i:s") 
                 ]);
 
+                // reply back to sender
+                $from->send($payload);
+
                 // Broadcast message for all the connected members;
                 $this->broadcast($payload, $sender_id, $data); 
                 break; 
@@ -133,7 +126,7 @@ class ChatServer implements MessageComponentInterface {
 
                 if($remove){
                     $payload = json_encode([
-                        "action" => "delete", 
+                        "action" => "remove", 
                         "message_id" => $data["message_id"]
                     ]); 
 
@@ -167,21 +160,30 @@ class ChatServer implements MessageComponentInterface {
     }
 
     private function broadcast(string $payload, string $senderId, array $data) {
+        // If receiver_id is set → private chat
         if (!empty($data['receiver_id'])) {
-            // private chat
             $receiverId = $data['receiver_id'];
             if (isset($this->userConnections[$receiverId])) {
                 foreach ($this->userConnections[$receiverId] as $conn) {
                     $conn->send($payload);
                 }
             }
+            
+            // echo back to sender too
             foreach ($this->userConnections[$senderId] as $conn) {
                 $conn->send($payload);
             }
-        } elseif (!empty($data['room_id'])) {
-            // room chat
-            foreach ($this->userConnections as $uid => $connections) {
-                foreach ($connections as $conn) {
+        }
+        // If room_id is set → room chat
+        elseif (!empty($data['room_id'])) {
+            foreach ($this->userConnections[$data['room_id']] ?? [] as $conn) {
+                $conn->send($payload);
+            }
+        }
+        // If neither is set (like in your test), just echo to sender
+        else {
+            if (isset($this->userConnections[$senderId])) {
+                foreach ($this->userConnections[$senderId] as $conn) {
                     $conn->send($payload);
                 }
             }
